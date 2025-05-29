@@ -1,0 +1,22 @@
+{
+    "name": "anderson9527/laravel-dev-helper",
+    "description": "Developer tools for Laravel projects, e.g., generate PHPDoc @property for models.",
+    "type": "library",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Anderson9527\\LaravelDevHelper\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Anderson9527\\LaravelDevHelper\\LaravelDevHelperServiceProvider"
+            ]
+        }
+    },
+    "require": {
+        "php": "^8.4",
+        "laravel/framework": "^12.0"
+    }
+}
