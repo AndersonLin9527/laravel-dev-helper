@@ -4,6 +4,7 @@ namespace Anderson9527\LaravelDevHelper\Commands;
 
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
+use Symfony\Component\Console\Command\Command as SymfonyCommand;
 
 /**
  * Class MakeModelProperties
@@ -36,19 +37,27 @@ class MakeModelProperties extends Command
 
     /**
      * Execute the console command.
+     *
      * @return int
-     * php artisan x-anderson9527:make-model-properties
-     * php artisan x-anderson9527:make-model-properties members
+     * @example php artisan x-anderson9527:make-model-properties
+     * @example php artisan x-anderson9527:make-model-properties members
      */
     public function handle(): int
     {
-        $schema = Schema::connection(config('database.default', 'mysql'));
-
+        $defaultConnection = config('database.default', 'mysql');
+        $defaultDatabase = config('database.connections.' . $defaultConnection . '.database');
+        $schema = Schema::connection($defaultConnection);
         // 詢問 Database Table
         $inputDatabaseTable = $this->argument('inputDatabaseTable');
         do {
             if (is_null($inputDatabaseTable)) {
-                $inputDatabaseTable = $this->ask('Table name ?');
+                $allTableInfos = $schema->getTables($defaultDatabase);
+                $allTableNames = collect($allTableInfos)->pluck('name')->all();
+
+                $inputDatabaseTable = $this->choice(
+                    'Please select a table',
+                    $allTableNames
+                );
             }
             if (!$schema->hasTable($inputDatabaseTable)) {
                 $this->error('Table name : ' . $inputDatabaseTable . ' does not exist !');
@@ -57,14 +66,28 @@ class MakeModelProperties extends Command
         } while ($inputDatabaseTable == null);
         $this->info('$inputDatabaseTable: ' . $inputDatabaseTable . PHP_EOL);
 
-        $tableColumns = $schema->getColumnListing($inputDatabaseTable);
-        foreach ($tableColumns as $tableColumn) {
-            $this->line('@property mixed ' . $tableColumn);
+        foreach ($schema->getColumns($inputDatabaseTable) as $column) {
+            $name = $column['name'];
+            $type = $this->mapTypeName($column['type_name']);
+            $nullable = $column['nullable'] ?? false;
+            $phpDocType = $nullable && $type !== 'mixed' ? "?$type" : $type;
+            $this->line("@property $phpDocType \$$name");
         }
-        $this->line('');
-        foreach ($tableColumns as $tableColumn) {
-            $this->line("'" . $tableColumn . "',");
-        }
-        return 1;
+
+        return SymfonyCommand::SUCCESS;
     }
+
+    protected function mapTypeName(string $typeName): string
+    {
+        return match (strtolower($typeName)) {
+            'bigint', 'int', 'mediumint', 'smallint', 'tinyint' => 'int',
+            'boolean' => 'bool',
+            'char', 'longtext', 'mediumtext', 'text', 'varchar' => 'string',
+            'date', 'datetime', 'time', 'timestamp' => 'string', // 用 string 表示時間
+            'decimal', 'double', 'float' => 'float',
+            'json' => 'array',
+            default => 'mixed',
+        };
+    }
+
 }
