@@ -2,6 +2,7 @@
 
 namespace Anderson9527\LaravelDevHelper;
 
+use Anderson9527\LaravelDevHelper\Commands\MakeDiffContents;
 use Anderson9527\LaravelDevHelper\Commands\MakeModelProperties;
 use Illuminate\Support\ServiceProvider;
 
@@ -18,6 +19,7 @@ class LaravelDevHelperServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 MakeModelProperties::class,
+                MakeDiffContents::class,
             ]);
         }
     }
