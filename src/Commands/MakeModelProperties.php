@@ -23,7 +23,7 @@ class MakeModelProperties extends Command
      *
      * @var string
      */
-    protected $description = 'Make Model @properties for PHPDOC';
+    protected $description = 'Make Model @properties for PHPDoc';
 
     /**
      * Create a new command instance.
