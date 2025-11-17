@@ -21,6 +21,15 @@ class LaravelDevHelperServiceProvider extends ServiceProvider
                 MakeModelProperties::class,
                 MakeDiffContents::class,
             ]);
+            // 發佈「本機用」設定檔範本到專案根目錄
+            // php artisan vendor:publish --tag=local-anderson9527-laravel-dev-helper
+            // php artisan vendor:publish --tag=local-anderson9527-laravel-dev-helper --force
+            $this->publishes(
+                [
+                    __DIR__ . '/stubs/local-anderson9527-laravel-dev-helper.php' => base_path('.local-anderson9527-laravel-dev-helper.php'),
+                ],
+                'local-anderson9527-laravel-dev-helper'
+            );
         }
     }
 
