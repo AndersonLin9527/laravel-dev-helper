@@ -66,12 +66,20 @@ class MakeModelProperties extends Command
         } while ($inputDatabaseTable == null);
         $this->info('$inputDatabaseTable: ' . $inputDatabaseTable . PHP_EOL);
 
-        foreach ($schema->getColumns($inputDatabaseTable) as $column) {
+        $this->info('PHPDoc @property:' . PHP_EOL);
+        $columns = $schema->getColumns($inputDatabaseTable);
+        foreach ($columns as $column) {
             $name = $column['name'];
             $type = $this->mapTypeName($column['type_name']);
             $nullable = $column['nullable'] ?? false;
-            $phpDocType = $nullable && $type !== 'mixed' ? "?$type" : $type;
+            $phpDocType = $nullable && $type !== 'mixed' ? $type . '|null' : $type;
             $this->line("@property $phpDocType \$$name");
+        }
+
+        $this->info(PHP_EOL . '$fillable:' . PHP_EOL);
+        foreach ($columns as $column) {
+            $name = $column['name'];
+            $this->line("'" . $name . "',");
         }
 
         return SymfonyCommand::SUCCESS;
