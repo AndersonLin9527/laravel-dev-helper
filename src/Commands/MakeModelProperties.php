@@ -23,7 +23,7 @@ class MakeModelProperties extends Command
      *
      * @var string
      */
-    protected $description = 'Make Model @properties for PHPDoc';
+    protected $description = 'v13.1.0 Make Model @properties for PHPDoc';
 
     /**
      * Create a new command instance.
@@ -70,9 +70,15 @@ class MakeModelProperties extends Command
         $columns = $schema->getColumns($inputDatabaseTable);
         foreach ($columns as $column) {
             $name = $column['name'];
-            $type = $this->mapTypeName($column['type_name']);
-            $nullable = $column['nullable'] ?? false;
-            $phpDocType = $nullable && $type !== 'mixed' ? $type . '|null' : $type;
+
+            if (in_array($name, ['created_at', 'updated_at'], true)) {
+                $phpDocType = '\Illuminate\Support\Carbon|string';
+            } else {
+                $type = $this->mapTypeName($column['type_name']);
+                $nullable = $column['nullable'] ?? false;
+                $phpDocType = $nullable && $type !== 'mixed' ? $type . '|null' : $type;
+            }
+
             $this->line("@property $phpDocType \$$name");
         }
 
