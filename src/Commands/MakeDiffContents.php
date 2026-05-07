@@ -21,7 +21,7 @@ class MakeDiffContents extends Command
      *
      * @var string
      */
-    protected $description = 'v12.0.3 Make Diff Contents for ChatGPT';
+    protected $description = 'v13.1.0 Make Diff Contents for ChatGPT';
 
     /**
      * Create a new command instance.
@@ -58,7 +58,8 @@ class MakeDiffContents extends Command
             $this->error('Failed to get git status or no changes detected.');
             return SymfonyCommand::FAILURE;
         }
-//        dump($output);
+
+//        dd($output, $resultCode);
 
         // 確保輸出目錄存在
 //        $outputDirectory = base_path('app/Console/Commands/Helper/ChatGPT/files');
@@ -98,20 +99,36 @@ class MakeDiffContents extends Command
 
             foreach ($localConfig['ignoreDirs'] as $ignoreDir) {
                 if (str_starts_with($relativeFileDir, $ignoreDir)) {
-                    $this->warn('Ignore dir  : ' . $relativeFileDir);
+                    $this->warn('Ignore dir of file : ' . $relativeFilePath);
                     continue 2;
                 }
             }
 
             if (in_array($relativeFilePath, $localConfig['ignoreFiles'])) {
-                $this->warn('Ignore file : ' . $relativeFilePath);
+                $this->warn('Ignore file        : ' . $relativeFilePath);
                 continue;
             }
 
-            $updateContents[] = $fileGitStatusText . ': ' . $filePath;
+            $this->line('Writing file ..... : ' . $relativeFilePath);
+
+            $updateContents[] = '# ' . $fileGitStatusText . ': ' . $filePath;
+
+            $gitDiff = $this->getFileGitDiff($filePath);
+
+            if ($gitDiff !== '') {
+                $updateContents[] = '';
+                $updateContents[] = '## Git Diff';
+                $updateContents[] = '';
+                $updateContents[] = '```diff';
+                $updateContents[] = $gitDiff;
+                $updateContents[] = '```';
+            }
+
             // 檢查檔案是否存在於檔案系統上 (可能已刪除等原因)
             if (File::exists($absoluteFilePath)) {
                 $fileContent = File::get($absoluteFilePath);
+                $updateContents[] = '';
+                $updateContents[] = '## 完整檔案內容';
                 $updateContents[] = '';
                 $updateContents[] = "```" . $this->getFileSyntaxHighlight($filePath);
                 $updateContents[] = $fileContent;
@@ -134,7 +151,29 @@ class MakeDiffContents extends Command
     }
 
     /**
+     * 取得檔案 git 差異
+     *
+     * @param string $filePath
+     * @return string
+     */
+    private function getFileGitDiff(string $filePath): string
+    {
+        $output = [];
+        $resultCode = null;
+        $escapedFilePath = escapeshellarg($filePath);
+
+        exec("git diff -- $escapedFilePath", $output, $resultCode);
+
+        if ($resultCode !== 0) {
+            return '';
+        }
+
+        return trim(implode(PHP_EOL, $output));
+    }
+
+    /**
      * 取得檔案 git 狀態
+     *
      * @param string $fileGitStatus
      * @return string
      * @throws Exception
@@ -176,9 +215,15 @@ class MakeDiffContents extends Command
 
     /**
      * 讀取專案根目錄的本機設定檔
+     *
      * .local-anderson9527-laravel-dev-helper.php
      *
-     * @return array{ignoreDirs: array<int,string>, ignoreFiles: array<int,string>}
+     * @return array{
+     * ignoreDirs: array<int,string>,
+     * ignoreFiles: array<int,string>,
+     * prefixText: string,
+     * suffixText: string
+     * }
      */
     private function loadLocalConfig(): array
     {
@@ -188,6 +233,8 @@ class MakeDiffContents extends Command
             return [
                 'ignoreDirs' => [],
                 'ignoreFiles' => [],
+                'prefixText' => '',
+                'suffixText' => '',
             ];
         }
 
@@ -210,6 +257,5 @@ class MakeDiffContents extends Command
             'suffixText' => $makeDiffConfig['suffix_text'] ?? '',
         ];
     }
-
 
 }
